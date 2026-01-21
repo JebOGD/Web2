@@ -19,8 +19,4 @@ CREATE TABLE IF NOT EXISTS sessions (
     INDEX idx_expires_at (expires_at)
 );
 
-INSERT INTO users (email, password) VALUES 
-('test@example.com', 'placeholder_hash');
-
--- Show created tables
 SHOW TABLES;
