@@ -1,6 +1,6 @@
-import CardList from "@/components/CardList"
+import CardList from "@/components/card-list"
 import { Badge } from "@/components/ui/badge"
-import AppLineChart from "@/components/AppLineChart"
+import AppLineChart from "@/components/app-line-chart"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -25,7 +25,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import EditUser from "@/components/EditUser"
+import EditUser from "@/components/edit-user"
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar"
 
 const SingleUserPage = () => {
