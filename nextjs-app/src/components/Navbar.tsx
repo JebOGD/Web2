@@ -17,9 +17,23 @@ import { Button } from "./ui/button"
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { SidebarTrigger } from "./ui/sidebar";
+import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 const Navbar = () => {
     const  { theme, setTheme } = useTheme();
+    const router = useRouter();
+    const { user: currentUser } = useCurrentUser();
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            router.push('/auth/login');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
+
     return (
         <nav className="p-4 flex justify-between items-center sticky top-0 bg-background z-10">
             {/*left side*/}
@@ -59,9 +73,9 @@ const Navbar = () => {
                     <DropdownMenuContent sideOffset={10}>
                         <DropdownMenuLabel>My Account</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem><User className="h-[1.2rem] w-[1.2rem] mr-2"/>  Profile</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/users/${currentUser?.username}`)}><User className="h-[1.2rem] w-[1.2rem] mr-2"/>  Profile</DropdownMenuItem>
                         <DropdownMenuItem><Settings className="h-[1.2rem] w-[1.2rem] mr-2"/>Settings</DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive"><LogOut className="h-[1.2rem] w-[1.2rem] mr-2"/>Logout</DropdownMenuItem>
+                        <DropdownMenuItem variant="destructive" onClick={handleLogout}><LogOut className="h-[1.2rem] w-[1.2rem] mr-2"/>Logout</DropdownMenuItem>
                     </DropdownMenuContent>
                     </DropdownMenu> 
             </div>

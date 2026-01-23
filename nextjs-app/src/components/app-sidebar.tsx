@@ -1,3 +1,5 @@
+"use client";
+
 import { Home, Inbox, Calendar, Search, Settings, ChevronUp, User2, Plus, Projector, ChevronDown } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuItem , SidebarMenuButton, SidebarSeparator, SidebarGroupAction, SidebarMenuBadge, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "./ui/sidebar";
 import Link from "next/link";
@@ -5,6 +7,8 @@ import Image from "next/image";
 import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { DropdownMenuContent } from "./ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/use-current-user";
 const items = [
   {
     title: "Home",
@@ -34,6 +38,18 @@ const items = [
 ];
 
 const AppSideBar = () => {
+    const { user: currentUser } = useCurrentUser();
+    const router = useRouter();
+    
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            router.push('/auth/login');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
+
     return <Sidebar collapsible="icon">
             <SidebarHeader className="py-4">
                 <SidebarMenu>
@@ -176,13 +192,13 @@ const AppSideBar = () => {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <SidebarMenuButton>
-                                    <User2 /> John Doe <ChevronUp className="ml-auto"/>
+                                    <User2 /> {currentUser?.username || 'Guest'} <ChevronUp className="ml-auto"/>
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Account</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => router.push(`/users/${currentUser?.username}`)}>Account</DropdownMenuItem>
                                 <DropdownMenuItem>Settings</DropdownMenuItem>
-                                <DropdownMenuItem>Logout</DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </SidebarMenu>

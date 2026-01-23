@@ -11,6 +11,9 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -38,14 +41,14 @@ export default function RegisterPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, username, phone, location }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
         console.log("Registration successful:", data);
-        router.push("/auth/login?message=Registration successful");
+        router.push(`/users/${username || email.split('@')[0]}`);
       } else {
         setError(data.error || "Registration failed");
       }
@@ -79,6 +82,16 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="username">Username (Optional)</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
@@ -100,6 +113,26 @@ export default function RegisterPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={8}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone (Optional)</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Enter your phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Location (Optional)</Label>
+              <Input
+                id="location"
+                type="text"
+                placeholder="Enter your location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
               />
             </div>
             {error && (

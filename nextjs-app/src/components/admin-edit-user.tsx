@@ -26,15 +26,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useCurrentUser } from "@/hooks/use-current-user"
 
-interface User {
-  id: number;
-  email: string;
-  username: string;
-  phone: string | null;
-  location: string | null;
-  role: string;
-  created_at: string;
-}
+import { User, AdminEditUserProps } from "@/types";
 
 const formSchema = z.object({
   username: z
@@ -58,13 +50,7 @@ const formSchema = z.object({
   .optional(),
 })
 
-interface EditUserProps {
-  username: string;
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const EditUser = ({ username, isOpen, onClose }: EditUserProps) => {
+const AdminEditUser = ({ userId, username, isOpen, onClose, initialData }: AdminEditUserProps) => {
   const [submitting, setSubmitting] = useState(false);
   const { user: currentUser } = useCurrentUser();
   const router = useRouter();
@@ -72,38 +58,26 @@ const EditUser = ({ username, isOpen, onClose }: EditUserProps) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
-      email: "",
-      phone: "",
-      location: "",
-      role: "User",
+      username: initialData?.username || "",
+      email: initialData?.email || "",
+      phone: initialData?.phone || "",
+      location: initialData?.location || "",
+      role: (initialData?.role as "Admin" | "User") || "User",
     },
   });
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!isOpen || !username) return;
-      
-      try {
-        const userResponse = await fetch(`/api/users/${username}`);
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          form.reset({
-            username: userData.user.username,
-            email: userData.user.email,
-            phone: userData.user.phone || "",
-            location: userData.user.location || "",
-            role: userData.user.role,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        alert('Failed to load user data');
-      }
-    };
+    if (initialData) {
+      form.reset({
+        username: initialData.username,
+        email: initialData.email,
+        phone: initialData.phone || "",
+        location: initialData.location || "",
+        role: (initialData.role as "Admin" | "User"),
+      });
+    }
+  }, [initialData, form]);
 
-    fetchUserData();
-  }, [isOpen, username, form]);
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setSubmitting(true);
     try {
@@ -116,6 +90,8 @@ const EditUser = ({ username, isOpen, onClose }: EditUserProps) => {
       });
 
       if (response.ok) {
+        alert('User updated successfully');
+        
         if (values.username !== username) {
           router.push(`/users/${values.username}`);
         } else {
@@ -123,9 +99,11 @@ const EditUser = ({ username, isOpen, onClose }: EditUserProps) => {
         }
       } else {
         const errorData = await response.json();
+        alert(errorData.error || 'Failed to update user');
       }
     } catch (error) {
       console.error('Error updating user:', error);
+      alert('Failed to update user');
     } finally {
       setSubmitting(false);
       window.location.reload();
@@ -151,7 +129,7 @@ const EditUser = ({ username, isOpen, onClose }: EditUserProps) => {
                                             <Input {...field} />
                                         </FormControl>
                                         <FormDescription>
-                                            This is your public display name.
+                                            This is the user's display name.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -175,7 +153,7 @@ const EditUser = ({ username, isOpen, onClose }: EditUserProps) => {
                                             <Input {...field} />
                                         </FormControl>
                                         <FormDescription>
-                                             Only Admin can see your phone number.
+                                             User's phone number.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -187,12 +165,11 @@ const EditUser = ({ username, isOpen, onClose }: EditUserProps) => {
                                             <Input {...field} />
                                         </FormControl>
                                         <FormDescription>
-                                            This is your public location.
+                                            User's location.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )} />
-                                {isAdmin && (
                                 <FormField control={form.control} name="role" render={({field}) => (
                                     <FormItem>
                                         <FormLabel>Role</FormLabel>
@@ -208,11 +185,11 @@ const EditUser = ({ username, isOpen, onClose }: EditUserProps) => {
                                             </Select>
                                         </FormControl>
                                         <FormDescription>
-                                            Only admins can change user roles.
+                                            User's role in the system.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
-                                )} />)}
+                                )} />
                                 <div className="flex gap-2 pt-4">
                                     <Button type="submit" disabled={submitting}>
                                         {submitting ? "Saving..." : "Save Changes"}
@@ -229,4 +206,4 @@ const EditUser = ({ username, isOpen, onClose }: EditUserProps) => {
     )
 }
 
-export default EditUser
+export default AdminEditUser;

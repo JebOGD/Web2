@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as argon2 from 'argon2';
 import { query } from '@/lib/db';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const users = await query(
-      'SELECT id, email, password, created_at FROM users WHERE email = ?',
+      'SELECT id, email, password, username, phone, location, role, created_at FROM users WHERE email = ?',
       [email]
     ) as any[];
     
@@ -26,7 +27,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify password with Argon2
     const isPasswordValid = await argon2.verify(user.password, password);
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -35,12 +35,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const cookieStore = await cookies();
+    cookieStore.set('user_id', user.id.toString(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/'
+    });
+    cookieStore.set('username', user.username, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/'
+    });
+
     return NextResponse.json(
       { 
         message: 'Login successful',
         user: {
           id: user.id,
           email: user.email,
+          username: user.username,
+          phone: user.phone,
+          location: user.location,
+          role: user.role,
           createdAt: user.created_at,
         }
       },

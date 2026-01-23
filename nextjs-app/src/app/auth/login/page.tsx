@@ -34,7 +34,7 @@ export default function LoginPage() {
       if (response.ok) {
         // STORE TOKEN HERE
         console.log("Login successful:", data);
-        router.push("/");
+        router.push(`/users/${data.user.username}`);
       } else {
         setError(data.error || "Login failed");
       }

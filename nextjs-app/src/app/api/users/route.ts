@@ -1,88 +1,119 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from '@/lib/auth';
+import { query } from '@/lib/db';
 
-// Mock data - in real app this would come from a database
-let users = [
-  { id: 1, name: "John Doe", email: "john@example.com", role: "admin", status: "active" },
-  { id: 2, name: "Jane Smith", email: "jane@example.com", role: "user", status: "active" },
-  { id: 3, name: "Bob Johnson", email: "bob@example.com", role: "user", status: "inactive" },
-];
-
-// GET /api/users - Get all users or filter by query params
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const role = searchParams.get("role");
-  const status = searchParams.get("status");
-  const page = parseInt(searchParams.get("page") || "1");
-  const limit = parseInt(searchParams.get("limit") || "10");
-
-  let filteredUsers = users;
-
-  // Apply filters
-  if (role) {
-    filteredUsers = filteredUsers.filter(user => user.role === role);
-  }
-  if (status) {
-    filteredUsers = filteredUsers.filter(user => user.status === status);
-  }
-
-  // Apply pagination
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-
-  return NextResponse.json({
-    users: paginatedUsers,
-    pagination: {
-      page,
-      limit,
-      total: filteredUsers.length,
-      pages: Math.ceil(filteredUsers.length / limit)
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser || currentUser.role !== 'Admin') {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
     }
-  });
+
+    const searchParams = request.nextUrl.searchParams;
+    const role = searchParams.get("role");
+    const status = searchParams.get("status");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+
+    let whereClause = "1=1";
+    const params: any[] = [];
+
+    if (role) {
+      whereClause += " AND role = ?";
+      params.push(role);
+    }
+    if (status) {
+      whereClause += " AND status = ?";
+      params.push(status);
+    }
+
+    const offset = (page - 1) * limit;
+
+    const users = await query(
+      `SELECT id, email, username, phone, location, role, created_at FROM users WHERE ${whereClause} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
+    ) as any[];
+
+    const totalResult = await query(
+      `SELECT COUNT(*) as total FROM users WHERE ${whereClause}`,
+      params
+    ) as any[];
+
+    const total = totalResult[0].total;
+
+    return NextResponse.json({
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }
 
-// POST /api/users - Create a new user
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, email, role = "user" } = body;
-
-    // Validation
-    if (!name || !email) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser || currentUser.role !== 'Admin') {
       return NextResponse.json(
-        { error: "Name and email are required" },
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { email, username, phone, location, role = 'User' } = body;
+
+    if (!email || !username) {
+      return NextResponse.json(
+        { error: 'Email and username are required' },
         { status: 400 }
       );
     }
 
-    // Check if email already exists
-    if (users.some(user => user.email === email)) {
+    const existingUser = await query(
+      'SELECT id FROM users WHERE email = ? OR username = ?',
+      [email, username]
+    ) as any[];
+
+    if (existingUser.length > 0) {
       return NextResponse.json(
-        { error: "Email already exists" },
+        { error: 'User with this email or username already exists' },
         { status: 409 }
       );
     }
 
-    // Create new user
-    const newUser = {
-      id: Math.max(...users.map(u => u.id)) + 1,
-      name,
-      email,
-      role,
-      status: "active"
-    };
+    const result = await query(
+      'INSERT INTO users (email, username, phone, location, role) VALUES (?, ?, ?, ?, ?)',
+      [email, username, phone || null, location || null, role]
+    ) as any;
 
-    users.push(newUser);
+    const newUser = await query(
+      'SELECT id, email, username, phone, location, role, created_at FROM users WHERE id = ?',
+      [result.insertId]
+    ) as any[];
 
     return NextResponse.json({
-      message: "User created successfully",
-      user: newUser
+      message: 'User created successfully',
+      user: newUser[0]
     }, { status: 201 });
 
   } catch (error) {
+    console.error('Error creating user:', error);
     return NextResponse.json(
-      { error: "Invalid JSON data" },
-      { status: 400 }
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }
