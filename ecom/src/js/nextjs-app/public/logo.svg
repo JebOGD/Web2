@@ -1,0 +1,21 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="128" height="128" rx="20" fill="#0F172A"/>
+
+  <!-- J Monogram -->
+  <path d="
+    M84 28
+    H48
+    V38
+    H72
+    V76
+    C72 86 66 92 56 92
+    C46 92 40 86 40 76
+    V72
+    H28
+    V78
+    C28 96 42 108 56 108
+    C70 108 84 96 84 76
+    Z"
+    fill="#38BDF8"/>
+</svg>
